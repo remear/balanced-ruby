@@ -48,7 +48,121 @@ describe Balanced::Customer, :vcr do
         @customer.business_name.should eq("Bill Inc.")
       end
     end
+    
+    describe "delete", :vcr do
+      before do
+        @customer = @marketplace.create_customer(
+          :name           => "Bill",
+          :email          => "bill@bill.com",
+          :business_name  => "Bill Inc.",
+          :ssn_last4      => "1234",
+          :address => {
+            :line1 => "1234 1st Street",
+            :city  => "San Francisco",
+            :state => "CA"
+          }
+        ).save
+        @customer_uri = @customer.uri
+      end
 
+      it "should no longer exist" do
+        @customer.unstore
+        expect { Balanced::Customer.find(@customer_uri) }.to raise_error(Balanced::NotFound)
+      end
+    end
+    
+    describe "delete customer with added card", :vcr do
+      before do
+        @customer = @marketplace.create_customer(
+          :name           => "Bill",
+          :email          => "bill@bill.com",
+          :business_name  => "Bill Inc.",
+          :ssn_last4      => "1234",
+          :address => {
+            :line1 => "1234 1st Street",
+            :city  => "San Francisco",
+            :state => "CA"
+          }
+        ).save
+        
+        @card = Balanced::Card.new(
+          :card_number       => "4111111111111111",
+          :expiration_month  => "12",
+          :expiration_year   => "2015",
+        ).save
+        
+        @customer.add_card(@card)
+        @customer_uri = @customer.uri
+      end
+
+      it "should still exist" do
+        @customer.unstore
+        expect { Balanced::Customer.find(@customer_uri) }.to raise_error(Balanced::NotFound)
+      end
+    end
+    
+    describe "delete customer with existing hold", :vcr do
+      before do
+        @customer = @marketplace.create_customer(
+          :name           => "Bill",
+          :email          => "bill@bill.com",
+          :business_name  => "Bill Inc.",
+          :ssn_last4      => "1234",
+          :address => {
+            :line1 => "1234 1st Street",
+            :city  => "San Francisco",
+            :state => "CA"
+          }
+        ).save
+        
+        @card = Balanced::Card.new(
+          :card_number       => "4111111111111111",
+          :expiration_month  => "12",
+          :expiration_year   => "2015",
+        ).save
+        
+        @customer.add_card(@card)
+        @customer_uri = @customer.uri
+        @customer.hold(:amount => 1000)
+      end
+
+      it "should still exist" do
+        expect { @customer.unstore }.to raise_error(Balanced::MethodNotAllowed)
+        expect { Balanced::Customer.find(@customer_uri) }.to_not raise_error(Balanced::NotFound)
+      end
+    end
+    
+    describe "delete customer with existing debit", :vcr do
+      before do
+        @customer = @marketplace.create_customer(
+          :name           => "Bill",
+          :email          => "bill@bill.com",
+          :business_name  => "Bill Inc.",
+          :ssn_last4      => "1234",
+          :address => {
+            :line1 => "1234 1st Street",
+            :city  => "San Francisco",
+            :state => "CA"
+          }
+        ).save
+        
+        @card = Balanced::Card.new(
+          :card_number       => "4111111111111111",
+          :expiration_month  => "12",
+          :expiration_year   => "2015",
+        ).save
+        
+        @customer.add_card(@card)
+        @customer_uri = @customer.uri
+        @customer.debit(:amount => 1000)
+      end
+
+      it "should still exist" do
+        expect { @customer.unstore }.to raise_error(Balanced::MethodNotAllowed)
+        expect { Balanced::Customer.find(@customer_uri) }.to_not raise_error(Balanced::NotFound)
+      end
+    end
+    
     describe "#add_card using untokenized object", :vcr do
       before do
       @customer = @marketplace.create_customer

@@ -1,7 +1,7 @@
 cwd = File.dirname(File.dirname(File.absolute_path(__FILE__)))
 $:.unshift(cwd + "/lib")
 require 'balanced'
-require 'ruby-debug'
+#require 'ruby-debug'
 
 
 begin
@@ -36,7 +36,7 @@ rescue Balanced::Conflict => ex
 end
 
 puts "create a customer"
-#
+
 customer = marketplace.create_customer(
           :name           => "Bill",
           :email          => "bill@bill.com",
@@ -49,8 +49,34 @@ customer = marketplace.create_customer(
         }
   ).save
 
+customer_uri = customer.uri
+
 puts "our customer uri is #{customer.uri}"
 
+puts "delete the customer"
+
+customer.unstore
+
+begin
+  Balanced::Customer.find(customer_uri)
+  raise "Customer should not exist"
+rescue Balanced::NotFound
+end
+
+puts "create a customer"
+
+customer = marketplace.create_customer(
+          :name           => "Bill",
+          :email          => "bill@bill.com",
+          :business_name  => "Bill Inc.",
+          :ssn_last4      => "1234",
+          :address => {
+            :line1 => "1234 1st Street",
+            :city  => "San Francisco",
+            :state => "CA"
+        }
+  ).save
+  
 puts "create a card and a bank account for our customer"
 
 bank_account = marketplace.create_bank_account(
@@ -109,7 +135,3 @@ raise "active card is incorrect" unless customer.active_card.id == card.id
 puts "check to see what is the active bank_account for a customer"
 
 raise "active bank account is incorrect" unless customer.active_bank_account.id == bank_account.id
-
-
-
-
