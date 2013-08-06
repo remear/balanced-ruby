@@ -36,7 +36,7 @@ module Balanced
       meta = args[3] || options.fetch(:meta) { nil }
       description = args[3] || options.fetch(:description) { nil }
 
-      ensure_associated_to_account!
+      ensure_associated_to_customer!
 
       self.account.debit(
           :amount => amount,
@@ -52,18 +52,25 @@ module Balanced
     #
     # @return [Hold]
     def hold *args
-      warn_on_positional args
       options = args.last.is_a?(Hash) ? args.pop : {}
-      amount = args[0] || options.fetch(:amount) { nil }
+      amount = args[0] || options.fetch(:amount) { }
       meta = args[1] || options.fetch(:meta) { nil }
-
-      ensure_associated_to_account!
-
-      self.account.hold(
+      source_uri = args[2] || options.fetch(:source_uri) { nil }
+      description = args[3] || options.fetch(:description) { nil }
+      appears_on_statement_as = args[4] || options.fetch(:appears_on_statement_as) { nil }
+      
+      ensure_associated_to_customer!
+      
+      hold = Hold.new(
+          :uri => self.customer.holds_uri,
           :amount => amount,
           :meta => meta,
-          :source_uri => self.uri
+          :source_uri => self.uri,
+          :description => description,
+          :appears_on_statement_as => appears_on_statement_as
       )
+      hold.save
+
     end
 
     def invalidate
@@ -74,7 +81,7 @@ module Balanced
     private
     # Ensure that one of account, account_uri, customer or customer_uri are set.
     # Otherwise raise an exception.
-    def ensure_associated_to_account!
+    def ensure_associated_to_customer!
       if attributes.values_at('account', 'account_uri', 'customer', 'customer_uri').compact.empty?
         raise UnassociatedCardError.new(self)
       end

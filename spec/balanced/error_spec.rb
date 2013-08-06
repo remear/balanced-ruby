@@ -51,6 +51,6 @@ describe Balanced::UnassociatedCardError do
   end
 
   its(:message) do
-    should == "The Balanced::Card with uri=#{card.attributes['uri']} is not associated to an account"
+    should == "The Balanced::Card with uri=#{card.attributes['uri']} is not associated to a customer"
   end
 end

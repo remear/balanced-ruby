@@ -16,6 +16,46 @@ describe Balanced::Card, '#hold', vcr: true, marketplace: true do
       card.hold
     }.to raise_error(Balanced::UnassociatedCardError)
   end
+  
+  describe 'with associated Customer' do
+    before do
+      api_key = Balanced::ApiKey.new.save
+      Balanced.configure api_key.secret
+      marketplace = Balanced::Marketplace.new.save
+      
+      customer = marketplace.create_customer(
+                :name           => "Bill",
+                :email          => "bill@bill.com",
+                :business_name  => "Bill Inc.",
+                :ssn_last4      => "1234",
+                :address => {
+                  :line1 => "1234 1st Street",
+                  :city  => "San Francisco",
+                  :state => "CA"
+                }
+      ).save
+
+      @card = marketplace.create_card(
+                :card_number       => "4111111111111111",
+                :expiration_month  => "12",
+                :expiration_year   => "2015",
+      ).save
+      
+      customer.add_card(@card)
+      @card = Balanced::Card.find(@card.uri)
+    end
+
+    it 'sets appears_on_statement_as' do
+      @card.hold(
+        :amount => 2000,
+        :description => 'Some descriptive text for the debit in the dashboard',
+        :appears_on_statement_as => 'Really Awesome Company'
+      )
+      subject { @card }
+      its(:appears_on_statement_as) { should eq 'Really Awesome Company' }
+    end
+    
+  end
 end
 
 describe Balanced::Card, '#debit', vcr: true, marketplace: true do

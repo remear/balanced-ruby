@@ -58,7 +58,7 @@ module Balanced
     end
 
     def error_message
-      "The Balanced::Card with uri=#{@card.attributes['uri']} is not associated to an account"
+      "The Balanced::Card with uri=#{@card.attributes['uri']} is not associated to a customer"
     end
   end
 
